@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36015.10 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tedd.M365AIMailman.ConsoleUI", "Tedd.M365AIMailman.ConsoleUI\Tedd.M365AIMailman.ConsoleUI.csproj", "{5B9E1497-E268-43FA-A627-8ED545A63905}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tedd.M365AIMailman", "Tedd.M365AIMailman\Tedd.M365AIMailman.csproj", "{29006452-27F6-4272-92B4-D4680D78710D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5B9E1497-E268-43FA-A627-8ED545A63905}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5B9E1497-E268-43FA-A627-8ED545A63905}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5B9E1497-E268-43FA-A627-8ED545A63905}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5B9E1497-E268-43FA-A627-8ED545A63905}.Release|Any CPU.Build.0 = Release|Any CPU
+		{29006452-27F6-4272-92B4-D4680D78710D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{29006452-27F6-4272-92B4-D4680D78710D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{29006452-27F6-4272-92B4-D4680D78710D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{29006452-27F6-4272-92B4-D4680D78710D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F6B51816-3433-4DAB-8745-9E81D37D0B7B}
+	EndGlobalSection
+EndGlobal
