@@ -26,9 +26,8 @@ Body Preview: {{$bodyPreview}}
 
 Based on the content, decide the most appropriate action:
 1. Move emails to a Specific Folder: If the email belongs in one of the following categories/folders: {DYNAMIC_FOLDER_LIST}. Use the 'MoveToFolderAsync' function, providing the EXACT folder name from the list above (e.g., '{DYNAMIC_EXAMPLE_FOLDER}' for a newsletter).
-2. Emails from Sharon Lim or Hui Lim should not be touched.
 3. Emails about refund, pending payments, missing payment or renewals of subscriptions should not be touched.
-4. Emails about calendar invite, Mensa, Olavtesten, Vibbo, or from Kim Hansen, Edd Hansen, Karl Anton Hansen, Borghild Hay or Tedd Hansen should not be touched unless it is cron-job or similar system generated garbage.
+4. Emails about calendar invite should not be touched unless it is cron-job or similar system generated garbage.
 5. Security related emails should not be touched.
 6. No Action: If the email seems important, personal, work-related, take no action.
 
