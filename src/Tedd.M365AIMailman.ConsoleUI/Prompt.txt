@@ -1,0 +1,21 @@
+﻿Analyze the following email details:
+From: {{$sender}}
+Subject: {{$subject}}
+Body Preview: {{$bodyPreview}}
+=== BODY START ===
+{{$body}}
+=== BODY END ===
+
+Based on the content, decide the most appropriate action:
+1. Move emails to a Specific Folder: If the email belongs in one of the following categories/folders: {DYNAMIC_FOLDER_LIST}. Use the 'MoveToFolderAsync' function, providing the EXACT folder name from the list above (e.g., '{DYNAMIC_EXAMPLE_FOLDER}' for a newsletter).
+2. Emails about calendar invite, refund, pending payments, missing payment or renewals of subscriptions should not be touched.
+3. Security related emails should not be touched.
+4. No Action: If the email seems important, personal, work-related, take no action.
+
+Execute the chosen function. If no action should be taken, respond with 'No action needed'.
+
+To summarize:
+* There are emails you should not touch. You need to identify them.
+* There are emails you should move to a specific folder. You need to identify them.
+
+Input Email ID: {{$messageId}}

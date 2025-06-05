@@ -27,8 +27,8 @@ internal class EmailPlugin
     private readonly GraphService _graphService;
     private readonly ILogger<EmailPlugin> _logger;
     private readonly EmailProcessingSettings _settings;
-    private static readonly ConcurrentDictionary<string, string> _folderIdCache = new(StringComparer.OrdinalIgnoreCase);
-    private static readonly char[] FolderPathSeparators = new[] { '\\', '/' }; // Accept both separators
+    private static readonly ConcurrentDictionary<String, String> _folderIdCache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly Char[] FolderPathSeparators = new[] { '\\', '/' }; // Accept both separators
 
 
     public EmailPlugin(GraphService graphService, ILogger<EmailPlugin> logger, IOptions<AppSettings> appSettings)
@@ -76,9 +76,9 @@ internal class EmailPlugin
 
 
     [KernelFunction("move_to_folder"), Description("Moves an email message to a specific, configured folder (e.g., 'AI/Newsletters'). Use EXACT folder name/path provided.")]
-    public async Task<string> MoveToFolderAsync(
-        [Description("The unique identifier of the email message to move.")] string messageId,
-        [Description("The EXACT name/path of the target folder (e.g., 'AI/Newsletters', 'AI/Receipts') as configured and listed in the prompt.")] string folderName)
+    public async Task<String> MoveToFolderAsync(
+        [Description("The unique identifier of the email message to move.")] String messageId,
+        [Description("The EXACT name/path of the target folder (e.g., 'Mailman/Newsletters', 'Mailman/Receipts') as configured and listed in the prompt.")] String folderName)
     {
         ArgumentException.ThrowIfNullOrEmpty(messageId, nameof(messageId));
         ArgumentException.ThrowIfNullOrEmpty(folderName, nameof(folderName));
@@ -91,7 +91,7 @@ internal class EmailPlugin
         }
 
 
-        _logger.LogInformation("Attempting to move message {MessageId} for user {UserId} to specific folder '{FolderName}'",MessageIdTransformer.ShortenMessageId( messageId), _settings.TargetUserId, folderName);
+        _logger.LogInformation("Attempting to move message {MessageId} for user {UserId} to specific folder '{FolderName}'", MessageIdTransformer.ShortenMessageId(messageId), _settings.TargetUserId, folderName);
         return await MoveEmailToFolderInternalAsync(messageId, folderName);
     }
 
@@ -99,10 +99,10 @@ internal class EmailPlugin
     // --- Helper Methods ---
 
 
-    private async Task<string> MoveEmailToFolderInternalAsync(string messageId, string destinationFolderName)
+    private async Task<String> MoveEmailToFolderInternalAsync(String messageId, String destinationFolderName)
     {
         var shortMessageId = MessageIdTransformer.ShortenMessageId(messageId);
-        if (string.IsNullOrEmpty(destinationFolderName))
+        if (String.IsNullOrEmpty(destinationFolderName))
         {
             _logger.LogError("MoveEmailToFolderInternalAsync called with null or empty destinationFolderName for message {MessageId} and user {UserId}.", shortMessageId, _settings.TargetUserId);
             return "Error: Destination folder name cannot be empty.";
@@ -112,8 +112,8 @@ internal class EmailPlugin
         try
         {
             // GetFolderIdAsync now also needs the UserId context
-            string? destinationFolderId = await GetFolderIdAsync(destinationFolderName, _settings.TargetUserId);
-            if (string.IsNullOrEmpty(destinationFolderId))
+            String? destinationFolderId = await GetFolderIdAsync(destinationFolderName, _settings.TargetUserId);
+            if (String.IsNullOrEmpty(destinationFolderId))
             {
                 var errorMsg = $"Target folder '{destinationFolderName}' not found or could not be created for user {_settings.TargetUserId}.";
                 _logger.LogError(errorMsg + " Message ID: {MessageId}", shortMessageId);
@@ -158,9 +158,9 @@ internal class EmailPlugin
 
 
     // Enhanced folder lookup: Handles paths and creation, now requires userId
-    private async Task<string?> GetFolderIdAsync(string folderPath, string userId)
+    private async Task<String?> GetFolderIdAsync(String folderPath, String userId)
     {
-        string cacheKey = $"{userId}::{folderPath}";
+        var cacheKey = $"{userId}::{folderPath}";
         if (_folderIdCache.TryGetValue(cacheKey, out var cachedId))
         {
             _logger.LogDebug("Using cached folder ID for user '{UserId}' path '{FolderPath}': {FolderId}", userId, folderPath, cachedId);
@@ -172,7 +172,7 @@ internal class EmailPlugin
         try
         {
             var graphClient = await _graphService.GetAuthenticatedGraphClientAsync();
-            string? currentParentFolderId = null;
+            String? currentParentFolderId = null;
             var pathSegments = folderPath.Split(FolderPathSeparators, StringSplitOptions.RemoveEmptyEntries);
 
             if (!pathSegments.Any())
@@ -184,14 +184,14 @@ internal class EmailPlugin
             MailFolder? targetFolder = null;
             var baseFolderCollectionRequestBuilder = graphClient.Users[userId].MailFolders;
 
-            for (int i = 0; i < pathSegments.Length; i++)
+            for (var i = 0; i < pathSegments.Length; i++)
             {
                 var segment = pathSegments[i];
                 _logger.LogDebug("Processing segment '{Segment}' for user '{UserId}' under parent ID '{ParentId}'", segment, userId, currentParentFolderId ?? "root");
 
                 MailFolder? foundSegmentFolder = null;
-                string filter = $"displayName eq '{Uri.EscapeDataString(segment)}'";
-                string[] select = { "id", "displayName" }; // Use array initializer shorthand
+                var filter = $"displayName eq '{Uri.EscapeDataString(segment)}'";
+                String[] select = { "id", "displayName" }; // Use array initializer shorthand
 
                 // --- Attempt 1: Find the existing folder segment ---
                 try
@@ -254,7 +254,7 @@ internal class EmailPlugin
                             return null;
                         }
                     }
-                    catch (ODataError odataCreateError) when (odataCreateError.ResponseStatusCode == (int)HttpStatusCode.Conflict && odataCreateError.Error?.Code == "ErrorFolderExists")
+                    catch (ODataError odataCreateError) when (odataCreateError.ResponseStatusCode == (Int32)HttpStatusCode.Conflict && odataCreateError.Error?.Code == "ErrorFolderExists")
                     {
                         // --- Recovery Logic: Creation failed because it already exists ---
                         _logger.LogWarning(odataCreateError, "Creation of segment '{Segment}' failed because it already exists (Code: {ErrorCode}). Attempting to re-fetch the existing folder.", segment, odataCreateError.Error?.Code);

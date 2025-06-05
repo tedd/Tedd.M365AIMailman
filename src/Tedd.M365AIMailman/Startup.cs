@@ -11,29 +11,29 @@ using Tedd.M365AIMailman.Services;
 using Tedd.M365AIMailman.Workers; // Namespace for Worker
 
 namespace Tedd.M365AIMailman;
-    public static class Startup
+public static class Startup
+{
+    public class StartupInt { }
+    public static void Initialize(IServiceCollection services, IConfiguration configuration) // Renamed param for clarity
     {
-        public class StartupInt{}
-        public static void Initialize(IServiceCollection services, IConfiguration configuration) // Renamed param for clarity
-        {
-            // --- Configure Options ---
-            // Binds configuration sections to strongly typed objects
-            services.Configure<AppSettings>(configuration);
-            // Makes IOptions<AppSettings> available via DI
-            services.AddOptions();
+        // --- Configure Options ---
+        // Binds configuration sections to strongly typed objects
+        services.Configure<AppSettings>(configuration);
+        // Makes IOptions<AppSettings> available via DI
+        services.AddOptions();
 
 
-            // --- Register Core Services ---
-            // Use Singleton for GraphService if the GraphServiceClient it holds can be reused safely
-            // (MSAL handles token refresh internally for Confidential Client)
-            //services.AddSingleton<GraphService>();
+        // --- Register Core Services ---
+        // Use Singleton for GraphService if the GraphServiceClient it holds can be reused safely
+        // (MSAL handles token refresh internally for Confidential Client)
+        //services.AddSingleton<GraphService>();
 
-            // Transient might be suitable for these as they likely hold little state per operation
-            services.AddTransient<EmailService>();
-            services.AddTransient<AIService>();
-            services.AddTransient<ProcessService>();
-            services.AddTransient<GraphService>();
-            services.AddTransient<EmailPlugin>(); // Register the plugin
+        // Transient might be suitable for these as they likely hold little state per operation
+        services.AddTransient<EmailService>();
+        services.AddTransient<AIService>();
+        services.AddTransient<ProcessService>();
+        services.AddTransient<GraphService>();
+        services.AddTransient<EmailPlugin>(); // Register the plugin
 
         // --- Semantic Kernel Configuration ---
         services.AddSingleton(sp => // Use factory for complex setup
@@ -71,7 +71,8 @@ namespace Tedd.M365AIMailman;
             }
 
             // Build the kernel - it will now use the hostLoggerFactory for its internal logging needs
-            var kernel = kernelBuilder.Build();
+            var kernel = kernelBuilder
+                .Build();
 
             // Import the plugin *after* the kernel is built
             var graphSvc = sp.GetRequiredService<GraphService>();
@@ -79,6 +80,7 @@ namespace Tedd.M365AIMailman;
             var appSettings = sp.GetRequiredService<IOptions<AppSettings>>();
             var emailPluginInstance = new EmailPlugin(graphSvc, pluginLogger, appSettings);
             kernel.ImportPluginFromObject(emailPluginInstance, nameof(EmailPlugin));
+
 
             var startupLogger = sp.GetRequiredService<ILogger<StartupInt>>();
             startupLogger.LogInformation("Semantic Kernel singleton created and EmailPlugin imported.");
@@ -89,5 +91,5 @@ namespace Tedd.M365AIMailman;
 
         // --- Register Hosted Service ---
         services.AddHostedService<Worker>();
-        }
     }
+}

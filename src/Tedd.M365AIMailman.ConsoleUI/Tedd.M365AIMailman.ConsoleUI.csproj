@@ -37,4 +37,13 @@
 		</Content>
 	</ItemGroup>
 
+	<ItemGroup>
+	  <None Update="Prompt.Override.txt">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	  <None Update="Prompt.txt">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+
 </Project>

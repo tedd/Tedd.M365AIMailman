@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.Graph.Models;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
+
 using Tedd.M365AIMailman.Helpers;
 using Tedd.M365AIMailman.Models;
 using Tedd.M365AIMailman.Plugins;
@@ -15,38 +16,8 @@ internal class AIService
     private readonly Kernel _kernel;
     private readonly EmailPlugin _emailPlugin; // Inject the plugin
     private readonly EmailProcessingSettings _emailProcessingSettings;
-    private const string EmailPromptTemplate = @"
-Analyze the following email details:
-From: {{$sender}}
-Subject: {{$subject}}
-Body Preview: {{$bodyPreview}}
-=== BODY START ===
-{{$body}}
-=== BODY END ===
+    private String EmailPromptTemplate;
 
-Based on the content, decide the most appropriate action:
-1. Move emails to a Specific Folder: If the email belongs in one of the following categories/folders: {DYNAMIC_FOLDER_LIST}. Use the 'MoveToFolderAsync' function, providing the EXACT folder name from the list above (e.g., '{DYNAMIC_EXAMPLE_FOLDER}' for a newsletter).
-2. Emails from Sharon Lim or Hui Lim should not be touched.
-3. Emails about refund, pending payments, missing payment or renewals of subscriptions should not be touched.
-4. Emails about calendar invite, Mensa, Olavtesten, Vibbo, or from Kim Hansen, Edd Hansen, Karl Anton Hansen, Borghild Hay or Tedd Hansen should not be touched unless it is cron-job or similar system generated garbage.
-5. Security related emails should not be touched.
-6. No Action: If the email seems important, personal, work-related, take no action.
-
-Execute the chosen function. If no action should be taken, respond with 'No action needed'.
-
-To summarize:
-* There are emails you should not touch. You need to identify them.
-* There are emails you should move to a specific folder. You need to identify them.
-
-Input Email ID: {{$messageId}}
-";
-    /*
-=== BODY START ===
-{{$body}}
-=== BODY END ===
-     */
-    
-    // Inject Kernel and EmailPlugin directly - they should be registered in Startup
     public AIService(ILogger<AIService> logger, Kernel kernel, EmailPlugin emailPlugin, IOptions<AppSettings> appSettings)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -54,6 +25,9 @@ Input Email ID: {{$messageId}}
         _emailPlugin = emailPlugin ?? throw new ArgumentNullException(nameof(emailPlugin));
         _emailProcessingSettings = appSettings?.Value?.EMailProcessing ?? throw new ArgumentNullException(nameof(appSettings.Value.EMailProcessing));
 
+        if (!File.Exists(_emailProcessingSettings.PromptFile))
+            throw new Exception($"EmailProcessing:PromptFile \"{_emailProcessingSettings.PromptFile}\" does not exist.");
+        EmailPromptTemplate = File.ReadAllText(_emailProcessingSettings.PromptFile);
 
         // Plugin registration should happen when Kernel is built or here if needed,
         // but preferably during Kernel setup in Startup.cs for clarity.
@@ -62,20 +36,21 @@ Input Email ID: {{$messageId}}
     }
 
     // Method to process a single email
-    public async Task<string> ProcessEmailAsync(Message message, CancellationToken cancellationToken = default)
+    public async Task<String> ProcessEmailAsync(Message message, CancellationToken cancellationToken = default)
     {
 
-        if (message is null || string.IsNullOrEmpty(message.Id))
+        if (message is null || String.IsNullOrEmpty(message.Id))
         {
             _logger.LogWarning("ProcessEmailAsync called with null or invalid message.");
             return "Error: Invalid message data.";
         }
-        
-        _logger.LogInformation("AI Processing Message ID: {MessageId} (short id: {shortId}, Subject: '{Subject}'", message.Id, MessageIdTransformer.ShortenMessageId(message.Id),message.Subject);
+
+        _logger.LogInformation("AI Processing Message ID: {MessageId} (short id: {shortId}, Subject: '{Subject}'", message.Id, MessageIdTransformer.ShortenMessageId(message.Id), message.Subject);
 
         var executionSettings = new OpenAIPromptExecutionSettings
         {
-            ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
+            ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
+            ChatSystemPrompt = _emailProcessingSettings.SystemPrompt, // Use the plugin's system prompt
         };
 
         // Dynamically build folder list (same as before)
@@ -85,12 +60,12 @@ Input Email ID: {{$messageId}}
             .Select(kvp => kvp.Value) // Use the actual folder path/name from config
             .ToList();
 
-        string availableFoldersString = string.Join("\t", customFolderNames.Select(f => $"'{f}'"));
-        if (string.IsNullOrEmpty(availableFoldersString)) availableFoldersString = "No specific custom folders configured";
-        string exampleFolder = _emailProcessingSettings.TargetFolders.GetValueOrDefault("Newsletter", "Mailman/Newsletters"); // Example folder path
+        var availableFoldersString = String.Join("\t", customFolderNames.Select(f => $"'{f}'"));
+        if (String.IsNullOrEmpty(availableFoldersString)) availableFoldersString = "No specific custom folders configured";
+        var exampleFolder = _emailProcessingSettings.TargetFolders.GetValueOrDefault("Newsletter", "Mailman/Newsletters"); // Example folder path
 
         // Prepare the final prompt string using replacement for dynamic C# content
-        string emailClassifierPrompt = EmailPromptTemplate // Start with the base template
+        var emailClassifierPrompt = EmailPromptTemplate // Start with the base template
             .Replace("{DYNAMIC_FOLDER_LIST}", availableFoldersString)
             .Replace("{DYNAMIC_EXAMPLE_FOLDER}", exampleFolder);
 
@@ -98,7 +73,7 @@ Input Email ID: {{$messageId}}
         {
             // KernelArguments remain the same, targeting the {{$variable}} placeholders
             var body = HtmlStripper.ExtractText(message.Body?.Content);
-            var subject = message.Subject ?? string.Empty;
+            var subject = message.Subject ?? String.Empty;
             body = body.Substring(0, Math.Min(body.Length, 2048));
             subject = subject.Substring(0, Math.Min(subject.Length, 1024));
             var arguments = new KernelArguments(executionSettings)
@@ -106,7 +81,7 @@ Input Email ID: {{$messageId}}
                 { "messageId", message.Id },
                 { "sender", message.Sender?.EmailAddress?.Address ?? "Unknown Sender" },
                 { "subject", subject },
-                { "bodyPreview", message.BodyPreview??string.Empty },
+                { "bodyPreview", message.BodyPreview??String.Empty },
                 { "body", body }
             };
 
@@ -116,7 +91,7 @@ Input Email ID: {{$messageId}}
             _logger.LogDebug("Invoking Semantic Kernel for message {MessageId}", MessageIdTransformer.ShortenMessageId(message.Id));
             var result = await _kernel.InvokePromptAsync(emailClassifierPrompt, arguments, cancellationToken: cancellationToken);
 
-            var resultString = result.GetValue<string>() ?? "Kernel returned null or empty result.";
+            var resultString = result.GetValue<String>() ?? "Kernel returned null or empty result.";
             _logger.LogInformation("Kernel processing result for {MessageId}: {Result}", MessageIdTransformer.ShortenMessageId(message.Id), resultString);
 
             return resultString;
