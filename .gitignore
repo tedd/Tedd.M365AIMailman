@@ -398,3 +398,4 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+/src/Tedd.M365AIMailman.ConsoleUI/Prompt.Override.txt
