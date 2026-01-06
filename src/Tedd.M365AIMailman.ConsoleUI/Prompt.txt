@@ -1,21 +1,92 @@
-﻿Analyze the following email details:
-From: {{$sender}}
-Subject: {{$subject}}
-Body Preview: {{$bodyPreview}}
+﻿# Analyze the following email details:
+**From:** {{$sender}}
+**Subject:** {{$subject}}
+**Body Preview:** {{$bodyPreview}}
 === BODY START ===
 {{$body}}
 === BODY END ===
 
-Based on the content, decide the most appropriate action:
-1. Move emails to a Specific Folder: If the email belongs in one of the following categories/folders: {DYNAMIC_FOLDER_LIST}. Use the 'MoveToFolderAsync' function, providing the EXACT folder name from the list above (e.g., '{DYNAMIC_EXAMPLE_FOLDER}' for a newsletter).
-2. Emails about calendar invite, refund, pending payments, missing payment or renewals of subscriptions should not be touched.
-3. Security related emails should not be touched.
-4. No Action: If the email seems important, personal, work-related, take no action.
+Based on the content, apply the following prioritized rules in strict order to determine if and where the email should be moved. Stop at the first matching exemption and take no action if an exemption applies. Only route to a folder if explicitly allowed by rule 6 and no exemptions match. Evaluate content in English, Norwegian, or a mix, recognizing terms like "Efaktura", "Avtalegiro", or medical phrases from "Helsenorge".
+Rules:
 
-Execute the chosen function. If no action should be taken, respond with 'No action needed'.
+# 1. Sender/People Exemptions
 
-To summarize:
-* There are emails you should not touch. You need to identify them.
-* There are emails you should move to a specific folder. You need to identify them.
+## Do not move if the email is from or mentions:
+
+* Family member 1
+* Business Contact 1
+
+Check sender email/name and subject/body for mentions.
+
+
+# 2. Subject/Topic Exemptions
+## Do not move if related to:
+
+* Efaktura
+* Avtalegiro
+* Calendar invites
+* calendar invite/meeting cancellations
+* refunds
+* pending/missing payments
+* subscription renewals
+* purchases needing follow-up
+* bills
+* shipment notifications
+* return requests
+* deadline reminders (unless clearly spam, like "kundeklubb", week-end offer, seasonal offer, etc.)
+
+Scan for keywords, phrases, or context in subject/body, including bilingual equivalents (e.g., "bill" or "regning").
+
+# 3. Security Exemptions
+## Do not move if related to:
+
+* New/expiring tokens
+* new logins
+* security warnings/alerts
+* newly created accounts
+* account recovery
+* password reset
+* lost password
+* temporary passwords
+
+Check for exact or similar terms in any language.
+
+
+# 4. Importance Exemptions
+## Do not move if the email appears important, personal, or work-related, based on:
+
+* Personal tone (e.g., family/friend references, direct address).
+* Work context (e.g., project updates, professional signatures). This excemption does not include GitHub notificatons.
+* Urgency indicators (e.g., "urgent", attachments like documents).
+
+# 5. Service/Entity Exemptions
+## Do not move if from or related to:
+
+* GitHub (Where action is not performed by me, tedd. If I, tedd, peformed the action, this excepmtion rule does not apply.)
+* LinkedIn
+* Google Alerts
+* Fiken
+* Oda
+* Meny
+* DNB
+
+Check sender domains, subject, or body mentions.
+
+
+# Routing to Folders
+If no exemptions (rules 1-5) apply and the content matches a category in the following folder list, move the email to the exact matching folder:
+
+{DYNAMIC_FOLDER_LIST}
+
+Use logical judgment to match content to a folder (e.g., a newsletter to "Mailman/Newsletter"), but only use these exact folder names. If no match, take no action.
+
+# Decision and Output
+
+If an exemption applies, respond with "No action needed".
+If rule 6 applies and a folder matches, specify the folder to move to (e.g., "Move to Newsletters").
+Follow with a verbose explanation under a "## Detailed Reasoning" header, using an ordered list to detail each rule checked, quoting relevant content. Use bold text for key matches (e.g., Matched exemption: Sender). If comparing multiple criteria, use a markdown table. Conclude with a "Summary:" paragraph recapping the decision.
+
+# Command
+Use the 'MoveToFolderAsync' function, providing the EXACT folder name from the list above (e.g., '{DYNAMIC_EXAMPLE_FOLDER}' for a newsletter).
 
 Input Email ID: {{$messageId}}

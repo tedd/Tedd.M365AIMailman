@@ -47,12 +47,6 @@ internal class AIService
 
         _logger.LogInformation("AI Processing Message ID: {MessageId} (short id: {shortId}, Subject: '{Subject}'", message.Id, MessageIdTransformer.ShortenMessageId(message.Id), message.Subject);
 
-        var executionSettings = new OpenAIPromptExecutionSettings
-        {
-            ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
-            ChatSystemPrompt = _emailProcessingSettings.SystemPrompt, // Use the plugin's system prompt
-        };
-
         // Dynamically build folder list (same as before)
         var customFolderNames = _emailProcessingSettings.TargetFolders
             //.Where(kvp => !kvp.Key.Equals("Deleted", StringComparison.OrdinalIgnoreCase) &&
@@ -68,6 +62,18 @@ internal class AIService
         var emailClassifierPrompt = EmailPromptTemplate // Start with the base template
             .Replace("{DYNAMIC_FOLDER_LIST}", availableFoldersString)
             .Replace("{DYNAMIC_EXAMPLE_FOLDER}", exampleFolder);
+
+
+        var systemPrompt = File.ReadAllText(_emailProcessingSettings.SystemPromptFile);
+        // Prepare the final prompt string using replacement for dynamic C# content
+        systemPrompt = systemPrompt
+            .Replace("{DYNAMIC_FOLDER_LIST}", availableFoldersString)
+            .Replace("{DYNAMIC_EXAMPLE_FOLDER}", exampleFolder);
+        var executionSettings = new OpenAIPromptExecutionSettings
+        {
+            ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
+            ChatSystemPrompt = systemPrompt
+        };
 
         try
         {

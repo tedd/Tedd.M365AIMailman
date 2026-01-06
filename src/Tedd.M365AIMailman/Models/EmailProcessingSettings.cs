@@ -14,5 +14,5 @@ internal class EmailProcessingSettings
     public Int32 MaxEmailsToProcessPerRun { get; set; } = 20;
     public String PromptFile { get; set; } = "Prompt.txt";
 
-    public String SystemPrompt { get; set; } = "You are an AI assistant that classifies emails into specific folders based on their content. Use the provided rules and folder list to determine the best fit for each email.";
+    public String SystemPromptFile { get; set; } = "SystemPrompt.txt";
 }

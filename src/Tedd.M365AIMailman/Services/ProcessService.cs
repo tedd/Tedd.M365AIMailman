@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+
 using Tedd.M365AIMailman.Helpers;
 using Tedd.M365AIMailman.Models;
 
@@ -62,23 +63,23 @@ internal class ProcessService
                     // 3. Invoke AI Service for classification and action
                     string aiResult = await _aiService.ProcessEmailAsync(message, cancellationToken);
 
-                    // 4. Mark as Read (conditionally based on AI result)
-                    // Mark as read if AI didn't explicitly report an error AND didn't say "No action needed" (implying user should review it as unread).
+                    // 4. Tag as processed (conditionally based on AI result)
+                    // Tag if AI didn't explicitly report an error AND didn't say "No action needed" (implying user should review it as unread).
                     // Adjust this logic based on desired behavior for "No action needed".
-                    bool markAsRead = !aiResult.StartsWith("Error:", StringComparison.OrdinalIgnoreCase);
+                    bool shouldTag = !aiResult.StartsWith("Error:", StringComparison.OrdinalIgnoreCase);
                     // && !aiResult.Equals("No action needed", StringComparison.OrdinalIgnoreCase); // Uncomment if "No action" emails should remain unread
 
                     _logger.LogInformation("[{MessageId}] Sender: {sender}, Subject: {subject}", shortMessageId, message.Sender?.EmailAddress?.Address, message.Subject);
                     _logger.LogInformation("[{MessageId}] AI conclusion: {message}", shortMessageId, aiResult);
-                    _logger.LogInformation("[{MessageId}] Deciding to mark message as {Action} based on AI result.", shortMessageId, markAsRead ? "read" : "unread");
+                    _logger.LogInformation("[{MessageId}] Deciding to tag message as {Action} based on AI result.", shortMessageId, shouldTag ? "processed" : "not processed");
 
-                    if (markAsRead)
+                    if (shouldTag)
                     {
-                        await _emailService.MarkEmailAsReadAsync(message.Id, cancellationToken);
+                        await _emailService.TagAiReviewedAsync(message.Id, cancellationToken);
                     }
                     else
                     {
-                        _logger.LogWarning("Skipping 'mark as read' for message {MessageId} due to AI result: {Result}", shortMessageId, aiResult);
+                        _logger.LogWarning("Skipping 'AI done' tag for message {MessageId} due to AI result: {Result}", shortMessageId, aiResult);
                     }
                 }
                 catch (Exception ex)
